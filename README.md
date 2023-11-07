@@ -2,4 +2,4 @@
 
 Experiment visualizing 3D model faces as 2D data.
 
-Inspired by [Reverse Engineering Data Files](https://www.youtube.com/watch?v=AUWxl0WdiNI&t=4857s&ab_channel=TsodingDaily)
+Inspired by [Reverse Engineering Data Files](https://youtu.be/AUWxl0WdiNI)
