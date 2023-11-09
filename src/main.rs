@@ -2,12 +2,13 @@ use std::path::PathBuf;
 
 use err::ProjectorError;
 use itertools::Itertools;
+use projector::{ProjectionType, ProjectorParams};
 
 mod err;
 mod obj;
 mod projector;
 
-use crate::obj::{ObjLoader};
+use crate::obj::ObjLoader;
 use crate::projector::Projector;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -17,6 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut output = None;
     let mut w = 512;
     let mut h = 512;
+    let mut proj_type = ProjectionType::Face;
     for (k, v) in args.iter().skip(1).tuples() {
         if k == "--obj" {
             obj = Some(v);
@@ -30,6 +32,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if k == "--height" || k == "-h" {
             h = v.parse::<usize>()?;
         }
+
+        if k == "--proj_type" || k == "-p" {
+            proj_type = ProjectionType::from(v.as_str());
+        }
     }
 
     let obj = if let Some(o) = obj {
@@ -42,7 +48,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let proj = Projector::new();
 
     let obj = obj_loader.load()?;
-    let pixels = proj.project(obj, w, h)?;
+    let pixels = proj.project(
+        &obj,
+        ProjectorParams {
+            width: w,
+            height: h,
+            kind: proj_type,
+        },
+    )?;
 
     let of = if let Some(of) = output {
         PathBuf::from(of)
