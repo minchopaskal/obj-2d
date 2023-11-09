@@ -79,12 +79,13 @@ impl Projector {
             nmin.x = nmin.x.min(v.x);
             nmin.y = nmin.y.min(v.y);
             nmin.z = nmin.z.min(v.z);
-
             nmax.x = nmax.x.max(v.x);
             nmax.y = nmax.y.max(v.y);
             nmax.z = nmax.z.max(v.z);
         }
         let nrng = nmax - nmin;
+
+        println!("{nmin:?} {nmax:?} {nrng:?}");
 
         let mut pixels_comb = vec![(Vec3::new(), 0); w * h];
         match params.kind {
@@ -114,13 +115,13 @@ impl Projector {
             }
             ProjectionType::Vertex => {
                 for v in &obj.vertices {
-                    let x = (v.x + vmin.x.abs()) / vrng.x;
-                    let y = (v.y + vmin.y.abs()) / vrng.y;
+                    let x = (v.x - vmin.x) / vrng.x;
+                    let y = (v.y - vmin.y) / vrng.y;
 
                     let color = if v.z.abs() < Projector::EPSILON {
                         0_f32
                     } else {
-                        (v.z.abs() + vmin.z.abs()) / vrng.z
+                        (v.z.abs() - vmin.z) / vrng.z
                     };
 
                     let x = ((x * w as f32) as usize).min(w - 1);
@@ -132,20 +133,20 @@ impl Projector {
             }
             ProjectionType::VertexNormal => {
                 for v in obj.normals.iter() {
-                    let x = (v.x + nmin.x.abs()) / nrng.x;
-                    let y = (v.y + nmin.y.abs()) / nrng.y;
+                    let x = (v.x - nmin.x) / nrng.x;
+                    let y = (v.y - nmin.y) / nrng.y;
 
-                    let color = if v.z.abs() < Projector::EPSILON {
+                    let z = if v.z.abs() < Projector::EPSILON {
                         0_f32
                     } else {
-                        (v.z.abs() + nmin.z.abs()) / nrng.z
+                        (v.z.abs() - nmin.z) / nrng.z
                     };
 
                     let x = ((x * w as f32) as usize).min(w - 1);
                     let y = ((y * h as f32) as usize).min(h - 1);
                     assert!(x < w, "{x} !< {w}");
                     assert!(y < h, "{y} !< {h}");
-                    let v = Vec3::from_val(color);
+                    let v = Vec3::from_val(z);
                     pixels_comb[y * h + x] =
                         (pixels_comb[y * h + x].0 + v, pixels_comb[y * h + x].1 + 1);
                 }

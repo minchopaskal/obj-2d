@@ -17,6 +17,7 @@ pub struct Vec3 {
     pub z: f32,
 }
 
+#[allow(dead_code)]
 impl Vec3 {
     pub fn new() -> Vec3 {
         Vec3 {
@@ -24,6 +25,10 @@ impl Vec3 {
             y: 0f32,
             z: 0f32,
         }
+    }
+
+    pub fn from_vals(x: f32, y: f32, z: f32) -> Vec3 {
+        Vec3 { x, y, z }
     }
 
     pub fn from_val(val: f32) -> Vec3 {
