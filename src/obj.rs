@@ -68,6 +68,18 @@ impl Vec3 {
     pub fn dot(&self, v: &Vec3) -> f32 {
         self.x * v.x + self.y * v.y + self.z * v.z
     }
+
+    pub fn length_sqr(&self) -> f32 {
+        self.dot(self)
+    }
+
+    pub fn length(&self) -> f32 {
+        self.length_sqr().sqrt()
+    }
+
+    pub fn normalized(&self) -> Vec3 {
+        *self / self.length()
+    }
 }
 
 impl Neg for Vec3 {

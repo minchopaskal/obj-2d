@@ -3,6 +3,7 @@ use crate::{
     obj::{Obj, Vec3},
 };
 
+#[derive(PartialEq)]
 pub enum ProjectionType {
     Face,
     Vertex,
@@ -31,8 +32,6 @@ pub struct ProjectorParams {
 pub struct Projector {}
 
 impl Projector {
-    const EPSILON: f32 = 1e-6;
-
     pub fn new() -> Projector {
         Projector {}
     }
@@ -61,32 +60,6 @@ impl Projector {
             }
         };
 
-        let mut vmin = Vec3::from_val(f32::MAX);
-        let mut vmax = Vec3::from_val(f32::MIN);
-        for v in obj.vertices.iter() {
-            vmin.x = vmin.x.min(v.x);
-            vmin.y = vmin.y.min(v.y);
-            vmin.z = vmin.z.min(v.z);
-            vmax.x = vmax.x.max(v.x);
-            vmax.y = vmax.y.max(v.y);
-            vmax.z = vmax.z.max(v.z);
-        }
-        let vrng = vmax - vmin;
-
-        let mut nmin = Vec3::from_val(f32::MAX);
-        let mut nmax = Vec3::from_val(f32::MIN);
-        for v in obj.normals.iter() {
-            nmin.x = nmin.x.min(v.x);
-            nmin.y = nmin.y.min(v.y);
-            nmin.z = nmin.z.min(v.z);
-            nmax.x = nmax.x.max(v.x);
-            nmax.y = nmax.y.max(v.y);
-            nmax.z = nmax.z.max(v.z);
-        }
-        let nrng = nmax - nmin;
-
-        println!("{nmin:?} {nmax:?} {nrng:?}");
-
         let mut pixels_comb = vec![(Vec3::new(), 0); w * h];
         match params.kind {
             ProjectionType::Face => {
@@ -104,49 +77,32 @@ impl Projector {
                         for k in x..x + pw {
                             let idx = j * w + k;
                             let mut v = Vec3::new();
-                            for (n, i) in f.v.iter().enumerate() {
-                                v += (obj.vertices[*i] + vmin.get(n).abs()) / vrng.get(n);
-                                v /= 3_f32;
+                            for i in f.v.iter() {
+                                let nv =
+                                    (obj.vertices[*i].normalized() + Vec3::from_val(1.0)) / 2.0;
+                                v += nv;
                             }
-                            pixels_comb[idx] = (pixels_comb[idx].0 + v, pixels_comb[idx].1 + 1);
+                            pixels_comb[idx] = (pixels_comb[idx].0 + v, pixels_comb[idx].1 + 3);
                         }
                     }
                 }
             }
-            ProjectionType::Vertex => {
-                for v in &obj.vertices {
-                    let x = (v.x - vmin.x) / vrng.x;
-                    let y = (v.y - vmin.y) / vrng.y;
-
-                    let color = if v.z.abs() < Projector::EPSILON {
-                        0_f32
-                    } else {
-                        (v.z.abs() - vmin.z) / vrng.z
-                    };
+            ProjectionType::Vertex | ProjectionType::VertexNormal => {
+                let pts = if params.kind == ProjectionType::Vertex {
+                    &obj.vertices
+                } else {
+                    &obj.normals
+                };
+                for v in pts {
+                    let v = v.normalized();
+                    let v = (v + Vec3::from_val(1.0)) / 2.0;
+                    let x = v.x;
+                    let y = v.y;
+                    let color = v.z;
 
                     let x = ((x * w as f32) as usize).min(w - 1);
                     let y = ((y * h as f32) as usize).min(h - 1);
                     let v = Vec3::from_val(color);
-                    pixels_comb[y * h + x] =
-                        (pixels_comb[y * h + x].0 + v, pixels_comb[y * h + x].1 + 1);
-                }
-            }
-            ProjectionType::VertexNormal => {
-                for v in obj.normals.iter() {
-                    let x = (v.x - nmin.x) / nrng.x;
-                    let y = (v.y - nmin.y) / nrng.y;
-
-                    let z = if v.z.abs() < Projector::EPSILON {
-                        0_f32
-                    } else {
-                        (v.z.abs() - nmin.z) / nrng.z
-                    };
-
-                    let x = ((x * w as f32) as usize).min(w - 1);
-                    let y = ((y * h as f32) as usize).min(h - 1);
-                    assert!(x < w, "{x} !< {w}");
-                    assert!(y < h, "{y} !< {h}");
-                    let v = Vec3::from_val(z);
                     pixels_comb[y * h + x] =
                         (pixels_comb[y * h + x].0 + v, pixels_comb[y * h + x].1 + 1);
                 }
